@@ -1,0 +1,114 @@
+import { supabase } from "../../../config/supabase";
+
+export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "LATE";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface Task {
+  id: string;
+  matakuliahId: string;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskFormData {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+}
+
+interface RawTask {
+  id: string;
+  matakuliah_id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapTask(raw: RawTask): Task {
+  return {
+    id: raw.id,
+    matakuliahId: raw.matakuliah_id,
+    title: raw.title,
+    description: raw.description,
+    dueDate: raw.due_date,
+    priority: raw.priority,
+    status: raw.status,
+    completedAt: raw.completed_at,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+  };
+}
+
+export async function fetchTasks(matakuliahId: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from("tugas")
+    .select("*")
+    .eq("matakuliah_id", matakuliahId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as RawTask[]).map(mapTask);
+}
+
+export async function createTask(
+  matakuliahId: string,
+  form: TaskFormData,
+): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tugas")
+    .insert({
+      matakuliah_id: matakuliahId,
+      title: form.title,
+      description: form.description ?? null,
+      due_date: form.dueDate ?? null,
+      priority: form.priority,
+      status: form.status,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return mapTask(data as RawTask);
+}
+
+export async function updateTask(
+  id: string,
+  form: Partial<TaskFormData>,
+): Promise<Task> {
+  const payload: Record<string, unknown> = {};
+  if (form.title !== undefined) payload.title = form.title;
+  if (form.description !== undefined)
+    payload.description = form.description ?? null;
+  if (form.dueDate !== undefined) payload.due_date = form.dueDate ?? null;
+  if (form.priority !== undefined) payload.priority = form.priority;
+  if (form.status !== undefined) {
+    payload.status = form.status;
+    payload.completed_at =
+      form.status === "COMPLETED" ? new Date().toISOString() : null;
+  }
+
+  const { data, error } = await supabase
+    .from("tugas")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return mapTask(data as RawTask);
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase.from("tugas").delete().eq("id", id);
+  if (error) throw error;
+}

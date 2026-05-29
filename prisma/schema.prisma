@@ -1,0 +1,150 @@
+// =============================================================================
+// EduScore — Prisma Schema
+// Database: PostgreSQL
+// Normal Form: 3NF
+// Auth: Supabase (users managed externally; referenced via UUID foreign key)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Required for Supabase connection pooling
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  LATE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ---------------------------------------------------------------------------
+// User Profile
+// Mirrors the Supabase Auth user. `id` must match `auth.users.id` exactly.
+// Do NOT store passwords here — Supabase Auth owns credentials.
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @db.Uuid          // = supabase auth.users.id
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(dbgenerated("now()")) @updatedAt @map("updated_at")
+
+  // Relations
+  courses       Matakuliah[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Matakuliah (Course)
+// ---------------------------------------------------------------------------
+
+model Matakuliah {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String
+  code        String                          // e.g. "CS301"
+  description String?
+  semester    String?                         // e.g. "2024/2025 Ganjil"
+  color       String?  @default("#6366f1")   // hex — used for card theming
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(dbgenerated("now()")) @updatedAt @map("updated_at")
+
+  // Relations
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks           Tugas[]
+  learningEntries LearningTracker[]
+
+  // A user cannot enroll the same course code twice in the same semester
+  @@unique([userId, code, semester])
+  @@map("matakuliah")
+}
+
+// ---------------------------------------------------------------------------
+// Tugas (Task)
+// Progress is DERIVED, never stored:
+//   progress = COUNT(status = COMPLETED) / COUNT(*) * 100
+// ---------------------------------------------------------------------------
+
+model Tugas {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matakuliahId String       @map("matakuliah_id") @db.Uuid
+  title        String
+  description  String?
+  dueDate      DateTime?    @map("due_date")
+  priority     TaskPriority @default(MEDIUM)
+  status       TaskStatus   @default(NOT_STARTED)
+  completedAt  DateTime?    @map("completed_at") // set when status → COMPLETED
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @default(dbgenerated("now()")) @updatedAt @map("updated_at")
+
+  // Relations
+  matakuliah Matakuliah @relation(fields: [matakuliahId], references: [id], onDelete: Cascade)
+
+  @@index([matakuliahId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("tugas")
+}
+
+// ---------------------------------------------------------------------------
+// LearningTracker
+// Informational study log — does NOT influence course progress.
+// ---------------------------------------------------------------------------
+
+model LearningTracker {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matakuliahId String     @map("matakuliah_id") @db.Uuid
+  studyDate    DateTime   @map("study_date") @db.Date
+  topic        String
+  durationMins Int        @map("duration_mins") // minutes studied
+  notes        String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(dbgenerated("now()")) @updatedAt @map("updated_at")
+
+  // Relations
+  matakuliah Matakuliah @relation(fields: [matakuliahId], references: [id], onDelete: Cascade)
+
+  @@index([matakuliahId])
+  @@index([studyDate])
+  @@map("learning_tracker")
+}
+
+// ---------------------------------------------------------------------------
+// Notification
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  link      String?  // optional deep-link path e.g. "/courses/abc/tasks"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(dbgenerated("now()")) @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
