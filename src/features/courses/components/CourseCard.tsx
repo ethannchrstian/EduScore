@@ -4,6 +4,26 @@ import { useNavigate } from "react-router-dom";
 import type { Course } from "../services/courseService";
 import ConfirmDialog from "../../../shared/components/ui/ConfirmDialog";
 
+function ProgressRing({ progress, color }: { progress: number; color: string }) {
+  const size = 44;
+  const sw = 3.5;
+  const r = (size - sw) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - progress / 100);
+  return (
+    <svg width={size} height={size} className="-rotate-90" aria-hidden>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f4f4f5" strokeWidth={sw} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={sw}
+        strokeDasharray={circ} strokeDashoffset={offset}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.7s ease-out" }}
+      />
+    </svg>
+  );
+}
+
 interface CourseCardProps {
   course: Course;
   onEdit: (course: Course) => void;
@@ -73,23 +93,18 @@ export default function CourseCard({
           </div>
 
           {/* Progress */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-400">
-                {course.completedTasks}/{course.totalTasks} tasks
-              </span>
-              <span className="text-xs font-bold" style={{ color: course.color }}>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-400">
+              {course.completedTasks} of {course.totalTasks} done
+            </p>
+            <div className="relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
+              <ProgressRing progress={course.progress} color={course.color} />
+              <span
+                className="absolute text-[10px] font-bold leading-none"
+                style={{ color: course.progress > 0 ? course.color : "#a1a1aa" }}
+              >
                 {course.progress}%
               </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
-              <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
-                style={{
-                  width: `${course.progress}%`,
-                  backgroundColor: course.color,
-                }}
-              />
             </div>
           </div>
         </div>

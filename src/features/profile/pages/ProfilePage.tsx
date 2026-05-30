@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { LogOut, Mail, BookOpen, CheckCircle2, Clock } from "lucide-react";
+import { LogOut, Mail, BookOpen, CheckCircle2, Clock, ListTodo } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../../../shared/context/AuthContext";
 import { useDashboardData } from "../../dashboard/hooks/useDashboardData";
@@ -34,19 +34,11 @@ export default function ProfilePage() {
     } else navigate("/login", { replace: true });
   }
 
-  const studyLogs = data?.studyLogs;
-  const todayStudyMins = useMemo(() => {
-    if (!studyLogs) return 0;
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return studyLogs
-      .filter((log) => {
-        const d = new Date(log.study_date);
-        d.setHours(0, 0, 0, 0);
-        return d.getTime() === now.getTime();
-      })
-      .reduce((sum, log) => sum + log.duration_mins, 0);
-  }, [studyLogs]);
+  const totalStudyMins = useMemo(
+    () => (data?.studyLogs ?? []).reduce((sum, log) => sum + log.duration_mins, 0),
+    [data?.studyLogs],
+  );
+  const pendingTasks = (data?.totalTasks ?? 0) - (data?.completedTasks ?? 0);
 
   const stats = [
     {
@@ -64,11 +56,18 @@ export default function ProfilePage() {
       bg: "bg-emerald-50",
     },
     {
-      icon: <Clock size={16} strokeWidth={1.5} />,
-      value: data ? formatDuration(todayStudyMins) : "—",
-      label: "Today",
+      icon: <ListTodo size={16} strokeWidth={1.5} />,
+      value: data ? pendingTasks : "—",
+      label: "Pending",
       color: "text-amber-500",
       bg: "bg-amber-50",
+    },
+    {
+      icon: <Clock size={16} strokeWidth={1.5} />,
+      value: data ? formatDuration(totalStudyMins) : "—",
+      label: "Study time",
+      color: "text-violet-500",
+      bg: "bg-violet-50",
     },
   ];
 
@@ -108,46 +107,27 @@ export default function ProfilePage() {
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-3">
             Stats
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {stats.map(({ icon, value, label, color, bg }) => (
               <div
                 key={label}
-                className="flex flex-col items-center gap-2 rounded-2xl bg-white border border-zinc-100 py-4 hover:border-indigo-100 transition-colors"
+                className="flex items-center gap-3 rounded-2xl bg-white border border-zinc-100 px-4 py-4 hover:border-indigo-100 transition-colors"
               >
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full ${bg} ${color}`}
+                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}
                 >
                   {icon}
                 </div>
-                <span className="text-xl font-bold tracking-tight text-zinc-900">
-                  {value}
-                </span>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">
-                  {label}
-                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xl font-bold tracking-tight text-zinc-900 leading-none">
+                    {value}
+                  </span>
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-400 mt-0.5">
+                    {label}
+                  </span>
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Details */}
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-3">
-            Details
-          </p>
-          <div className="rounded-2xl bg-white border border-zinc-100 divide-y divide-zinc-50">
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <span className="text-xs text-zinc-400">Full name</span>
-              <span className="text-sm font-medium text-zinc-900">
-                {fullName}
-              </span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <span className="text-xs text-zinc-400">Email</span>
-              <span className="text-sm font-medium text-zinc-900 truncate max-w-[200px]">
-                {email}
-              </span>
-            </div>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useCountUp } from "../../../shared/hooks/useCountUp";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarClock,
@@ -58,7 +59,13 @@ export default function DashboardPage() {
     return filteredLogs.reduce((acc, curr) => acc + curr.duration_mins, 0);
   }, [studyLogs, filter]);
 
-  const studyValue = formatDuration(studyMins);
+  const animProgress  = useCountUp(data?.overallProgress ?? 0, 900, !loading);
+  const animCompleted = useCountUp(data?.completedTasks  ?? 0, 800, !loading);
+  const animTotal     = useCountUp(data?.totalTasks      ?? 0, 800, !loading);
+  const animCourses   = useCountUp(data?.totalCourses    ?? 0, 700, !loading);
+  const animStudyMins = useCountUp(studyMins, 800, !loading);
+  const animPending   = useCountUp((data?.totalTasks ?? 0) - (data?.completedTasks ?? 0), 800, !loading);
+  const studyValue    = formatDuration(animStudyMins);
 
   const activeFilterLabel = FILTERS.find((f) => f.key === filter)?.label;
 
@@ -96,7 +103,7 @@ export default function DashboardPage() {
                   Overall Progress
                 </p>
                 <p className="mt-1 text-5xl font-bold tracking-tight">
-                  {data?.overallProgress ?? 0}
+                  {animProgress}
                   <span className="text-2xl font-normal text-indigo-300">
                     %
                   </span>
@@ -104,10 +111,10 @@ export default function DashboardPage() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold">
-                  {data?.completedTasks ?? 0}
+                  {animCompleted}
                 </p>
                 <p className="text-xs text-indigo-200">
-                  of {data?.totalTasks ?? 0} tasks
+                  of {animTotal} tasks
                 </p>
               </div>
             </div>
@@ -175,7 +182,10 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-white border border-zinc-100 p-4 hover:border-indigo-100 transition-colors">
+          <div
+            className="rounded-2xl bg-white border border-zinc-100 p-4 hover:border-indigo-100 transition-colors"
+            style={{ animation: "stagger-in 0.4s cubic-bezier(0.16,1,0.3,1) 80ms both" }}
+          >
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
               Study time
             </p>
@@ -190,16 +200,18 @@ export default function DashboardPage() {
                   : "all time"}
             </p>
           </div>
-          <div className="rounded-2xl bg-white border border-zinc-100 p-4 hover:border-indigo-100 transition-colors">
+          <div
+            className="rounded-2xl bg-white border border-zinc-100 p-4 hover:border-indigo-100 transition-colors"
+            style={{ animation: "stagger-in 0.4s cubic-bezier(0.16,1,0.3,1) 160ms both" }}
+          >
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
               Courses
             </p>
             <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">
-              {data?.totalCourses ?? 0}
+              {animCourses}
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              {(data?.totalTasks ?? 0) - (data?.completedTasks ?? 0)} tasks
-              pending
+              {animPending} tasks pending
             </p>
           </div>
         </div>
@@ -249,8 +261,8 @@ export default function DashboardPage() {
                 <div
                   key={task.id}
                   onClick={() => navigate(`/courses/${task.matakuliahId}`)}
-                  className="flex items-center justify-between rounded-xl bg-white border border-zinc-100 px-4 py-3.5 cursor-pointer hover:border-indigo-100 hover:shadow-sm transition-all duration-200 active:scale-[0.99]"
-                  style={{ animationDelay: `${i * 50}ms` }}
+                  className="flex items-center justify-between rounded-xl bg-white border border-zinc-100 px-4 py-3.5 cursor-pointer hover:border-indigo-100 hover:shadow-sm transition-all active:scale-[0.99]"
+                  style={{ animation: `stagger-in 0.35s cubic-bezier(0.16,1,0.3,1) ${i * 65}ms both` }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div

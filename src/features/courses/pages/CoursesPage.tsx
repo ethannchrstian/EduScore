@@ -62,13 +62,17 @@ export default function CoursesPage() {
           />
         ) : (
           <div className="flex flex-col gap-3">
-            {courses.map((course) => (
-              <CourseCard
+            {courses.map((course, i) => (
+              <div
                 key={course.id}
-                course={course}
-                onEdit={openEdit}
-                onDelete={removeCourse}
-              />
+                style={{ animation: `stagger-in 0.4s cubic-bezier(0.16,1,0.3,1) ${i * 75}ms both` }}
+              >
+                <CourseCard
+                  course={course}
+                  onEdit={openEdit}
+                  onDelete={removeCourse}
+                />
+              </div>
             ))}
           </div>
         )}
