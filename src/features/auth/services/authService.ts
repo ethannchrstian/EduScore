@@ -13,19 +13,24 @@ export async function signIn(
   return { error };
 }
 
+export interface SignUpResult extends AuthResult {
+  emailInUse: boolean;
+}
+
 export async function signUp(
   email: string,
   password: string,
   fullName: string,
-): Promise<AuthResult> {
-  const { error } = await supabase.auth.signUp({
+): Promise<SignUpResult> {
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { full_name: fullName },
     },
   });
-  return { error };
+  const emailInUse = !error && (data.user?.identities?.length ?? 1) === 0;
+  return { error, emailInUse };
 }
 
 export async function signOut(): Promise<AuthResult> {

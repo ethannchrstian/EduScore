@@ -29,14 +29,19 @@ export default function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
     ev.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    const { error } = await signUp(
+    const { error, emailInUse } = await signUp(
       fields.email,
       fields.password,
       fields.fullName,
     );
     setLoading(false);
-    if (error) toast(error.message, "error");
-    else setDone(true);
+    if (emailInUse) {
+      setErrors((prev) => ({ ...prev, email: "An account with this email already exists" }));
+    } else if (error) {
+      toast(error.message, "error");
+    } else {
+      setDone(true);
+    }
   }
 
   if (done)
