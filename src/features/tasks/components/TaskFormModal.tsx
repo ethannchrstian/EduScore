@@ -9,46 +9,44 @@ import type {
   TaskStatus,
 } from "../services/taskService";
 
-interface TaskFormModalProps {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (form: TaskFormData) => Promise<void>;
-  editingTask?: Task | null;
-}
-
-const PRIORITIES: TaskPriority[] = ["LOW", "MEDIUM", "HIGH"];
-const STATUSES: TaskStatus[] = [
-  "NOT_STARTED",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "LATE",
+const PRIORITIES: { key: TaskPriority; label: string; color: string }[] = [
+  {
+    key: "LOW",
+    label: "Low",
+    color: "border-zinc-200 text-zinc-500 hover:border-zinc-300",
+  },
+  {
+    key: "MEDIUM",
+    label: "Medium",
+    color: "border-amber-200 text-amber-600 hover:border-amber-300",
+  },
+  {
+    key: "HIGH",
+    label: "High",
+    color: "border-red-200 text-red-500 hover:border-red-300",
+  },
 ];
-
-const PRIORITY_STYLES: Record<TaskPriority, string> = {
-  LOW: "bg-gray-100 text-gray-600 border-gray-200",
-  MEDIUM: "bg-amber-50 text-amber-600 border-amber-200",
-  HIGH: "bg-red-50 text-red-600 border-red-200",
+const PRIORITIES_ACTIVE: Record<TaskPriority, string> = {
+  LOW: "border-zinc-900 bg-zinc-900 text-white",
+  MEDIUM: "border-amber-500 bg-amber-500 text-white",
+  HIGH: "border-red-500 bg-red-500 text-white",
 };
-
-const STATUS_STYLES: Record<TaskStatus, string> = {
-  NOT_STARTED: "bg-gray-100 text-gray-600 border-gray-200",
-  IN_PROGRESS: "bg-blue-50 text-blue-600 border-blue-200",
-  COMPLETED: "bg-emerald-50 text-emerald-600 border-emerald-200",
-  LATE: "bg-red-50 text-red-600 border-red-200",
-};
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  NOT_STARTED: "Not Started",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-  LATE: "Late",
-};
+const STATUSES: { key: TaskStatus; label: string }[] = [
+  { key: "NOT_STARTED", label: "Not Started" },
+  { key: "IN_PROGRESS", label: "In Progress" },
+  { key: "COMPLETED", label: "Completed" },
+  { key: "LATE", label: "Late" },
+];
 
 function TaskForm({
   onClose,
   onSubmit,
   editingTask,
-}: Omit<TaskFormModalProps, "open">) {
+}: {
+  onClose: () => void;
+  onSubmit: (f: TaskFormData) => Promise<void>;
+  editingTask?: Task | null;
+}) {
   const initial: TaskFormData = editingTask
     ? {
         title: editingTask.title,
@@ -64,7 +62,6 @@ function TaskForm({
         priority: "MEDIUM",
         status: "NOT_STARTED",
       };
-
   const [fields, setFields] = useState<TaskFormData>(initial);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -88,84 +85,76 @@ function TaskForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
-        label="Task Title"
+        label="Title"
         placeholder="e.g. Complete Lab Report"
         value={fields.title}
         onChange={(e) => setFields((p) => ({ ...p, title: e.target.value }))}
         error={error}
       />
-
       <Input
-        label="Due Date (optional)"
+        label="Due Date"
         type="date"
         value={fields.dueDate}
         onChange={(e) => setFields((p) => ({ ...p, dueDate: e.target.value }))}
       />
 
-      {/* Priority selector */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-gray-700">Priority</label>
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          Priority
+        </label>
         <div className="flex gap-2">
-          {PRIORITIES.map((p) => (
+          {PRIORITIES.map(({ key, label, color }) => (
             <button
-              key={p}
+              key={key}
               type="button"
-              onClick={() => setFields((prev) => ({ ...prev, priority: p }))}
-              className={`flex-1 rounded-xl border py-2 text-xs font-semibold capitalize transition-all ${
-                fields.priority === p
-                  ? PRIORITY_STYLES[p] + " ring-2 ring-offset-1 ring-current"
-                  : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
-              }`}
+              onClick={() => setFields((p) => ({ ...p, priority: key }))}
+              className={`flex-1 rounded-xl border py-2 text-xs font-semibold transition-all duration-150 ${fields.priority === key ? PRIORITIES_ACTIVE[key] : `bg-white ${color}`}`}
             >
-              {p.toLowerCase()}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Status selector — only show when editing */}
       {editingTask && (
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-gray-700">Status</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            Status
+          </label>
           <div className="grid grid-cols-2 gap-2">
-            {STATUSES.map((s) => (
+            {STATUSES.map(({ key, label }) => (
               <button
-                key={s}
+                key={key}
                 type="button"
-                onClick={() => setFields((prev) => ({ ...prev, status: s }))}
-                className={`rounded-xl border py-2 text-xs font-semibold transition-all ${
-                  fields.status === s
-                    ? STATUS_STYLES[s] + " ring-2 ring-offset-1 ring-current"
-                    : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
-                }`}
+                onClick={() => setFields((p) => ({ ...p, status: key }))}
+                className={`rounded-xl border py-2 text-xs font-medium transition-all duration-150 ${fields.status === key ? "border-indigo-600 bg-indigo-600 text-white" : "border-zinc-200 text-zinc-500 hover:border-zinc-300 bg-white"}`}
               >
-                {STATUS_LABELS[s]}
+                {label}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Description */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-gray-700">
-          Notes (optional)
+        <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          Notes
         </label>
         <textarea
           rows={2}
-          placeholder="Any extra details..."
+          placeholder="Optional details..."
           value={fields.description}
           onChange={(e) =>
             setFields((p) => ({ ...p, description: e.target.value }))
           }
-          className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-150"
+          className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
         />
       </div>
 
-      <div className="flex gap-3 pt-1">
+      <div className="flex gap-2 pt-1">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           className="flex-1"
           onClick={onClose}
           disabled={loading}
@@ -185,12 +174,17 @@ export default function TaskFormModal({
   onClose,
   onSubmit,
   editingTask,
-}: TaskFormModalProps) {
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (f: TaskFormData) => Promise<void>;
+  editingTask?: Task | null;
+}) {
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={editingTask ? "Edit Task" : "Add Task"}
+      title={editingTask ? "Edit Task" : "New Task"}
     >
       <TaskForm
         key={open ? (editingTask?.id ?? "new") : "closed"}

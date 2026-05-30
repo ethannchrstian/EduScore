@@ -2,6 +2,7 @@ import { supabase } from "../../../config/supabase";
 
 export interface DashboardTask {
   id: string;
+  matakuliahId: string;
   title: string;
   courseName: string;
   courseColor: string;
@@ -9,17 +10,23 @@ export interface DashboardTask {
   status: string;
 }
 
+export interface StudyLog {
+  duration_mins: number;
+  study_date: string;
+}
+
 export interface DashboardData {
   overallProgress: number;
   totalTasks: number;
   completedTasks: number;
   urgentTasks: DashboardTask[];
-  todayStudyMins: number;
+  studyLogs: StudyLog[];
   totalCourses: number;
 }
 
 interface RawTask {
   id: string;
+  matakuliah_id: string;
   title: string;
   status: string;
   due_date: string;
@@ -36,7 +43,7 @@ export async function fetchDashboardData(
   const { data: tasksData, error: tasksError } = await supabase
     .from("tugas")
     .select(
-      "id, title, status, due_date, matakuliah!inner(name, color, user_id)",
+      "id, matakuliah_id, title, status, due_date, matakuliah!inner(name, color, user_id)",
     )
     .eq("matakuliah.user_id", userId);
 
@@ -65,6 +72,7 @@ export async function fetchDashboardData(
     .slice(0, 5)
     .map((t) => ({
       id: t.id,
+      matakuliahId: t.matakuliah_id,
       title: t.title,
       courseName: t.matakuliah.name,
       courseColor: t.matakuliah.color,
@@ -72,19 +80,17 @@ export async function fetchDashboardData(
       status: t.status,
     }));
 
-  // Today's study minutes
-  const today = new Date().toISOString().slice(0, 10);
+  // Study logs for metrics
   const { data: trackerData, error: trackerError } = await supabase
     .from("learning_tracker")
-    .select("duration_mins, matakuliah!inner(user_id)")
-    .eq("matakuliah.user_id", userId)
-    .eq("study_date", today);
+    .select("duration_mins, study_date, matakuliah!inner(user_id)")
+    .eq("matakuliah.user_id", userId);
 
   if (trackerError) throw trackerError;
-  const todayStudyMins = (trackerData ?? []).reduce(
-    (sum: number, r: { duration_mins: number }) => sum + r.duration_mins,
-    0,
-  );
+  const studyLogs = (trackerData ?? []).map((r) => ({
+    duration_mins: r.duration_mins,
+    study_date: r.study_date,
+  }));
 
   // Course count
   const { count } = await supabase
@@ -97,7 +103,7 @@ export async function fetchDashboardData(
     totalTasks,
     completedTasks,
     urgentTasks,
-    todayStudyMins,
+    studyLogs,
     totalCourses: count ?? 0,
   };
 }

@@ -1,29 +1,22 @@
 import { useState } from "react";
-import { MoreVertical, Pencil, Trash2, Clock } from "lucide-react";
+import { Trash2, Clock } from "lucide-react";
 import type { TrackerEntry } from "../services/learningTrackerService";
+import ConfirmDialog from "../../../shared/components/ui/ConfirmDialog";
 
-interface TrackerEntryItemProps {
+interface Props {
   entry: TrackerEntry;
-  onEdit: (entry: TrackerEntry) => void;
+  onEdit: (e: TrackerEntry) => void;
   onDelete: (id: string) => void;
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-
-  const isToday = dateStr.slice(0, 10) === today.toISOString().slice(0, 10);
-  const isYesterday =
-    dateStr.slice(0, 10) === yesterday.toISOString().slice(0, 10);
-
-  if (isToday) return "Today";
-  if (isYesterday) return "Yesterday";
-  return date.toLocaleDateString("en-US", {
+function formatDate(d: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (d.slice(0, 10) === today) return "Today";
+  if (d.slice(0, 10) === yesterday) return "Yesterday";
+  return new Date(d).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
   });
 }
 
@@ -34,78 +27,64 @@ function formatDuration(mins: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-export default function TrackerEntryItem({
-  entry,
-  onEdit,
-  onDelete,
-}: TrackerEntryItemProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function TrackerEntryItem({ entry, onEdit, onDelete }: Props) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
-      {/* Icon */}
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-500 mt-0.5">
-        <Clock size={16} />
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col gap-0.5 min-w-0">
-        <span className="text-sm font-semibold text-gray-900 truncate">
-          {entry.topic}
-        </span>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-400">
-            {formatDate(entry.studyDate)}
-          </span>
-          <span className="h-1 w-1 rounded-full bg-gray-300" />
-          <span className="text-xs font-semibold text-indigo-600">
-            {formatDuration(entry.durationMins)}
-          </span>
+    <>
+      <div
+        onClick={() => onEdit(entry)}
+        className="flex items-start gap-3 rounded-xl border border-zinc-100 bg-white px-4 py-3.5 cursor-pointer transition-all duration-200 hover:border-indigo-100 hover:shadow-sm active:scale-[0.99]"
+      >
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-500 mt-0.5">
+          <Clock size={15} />
         </div>
-        {entry.notes && (
-          <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">
-            {entry.notes}
-          </p>
-        )}
+        <div className="flex flex-1 flex-col gap-0.5 min-w-0">
+          <span className="text-sm font-medium text-zinc-900 truncate">
+            {entry.topic}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-400">
+              {formatDate(entry.studyDate)}
+            </span>
+            <span className="h-1 w-1 rounded-full bg-zinc-200" />
+            <span className="text-xs font-semibold text-indigo-600">
+              {formatDuration(entry.durationMins)}
+            </span>
+            {entry.notes && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-zinc-200" />
+                <span className="text-xs text-zinc-400 truncate">
+                  {entry.notes}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Delete — always visible */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirmOpen(true);
+          }}
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+          aria-label="Delete session"
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
 
-      {/* Kebab */}
-      <div className="relative flex-shrink-0">
-        <button
-          onClick={() => setMenuOpen((p) => !p)}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-        >
-          <MoreVertical size={15} />
-        </button>
-        {menuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div className="absolute right-0 top-8 z-20 min-w-[130px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(entry);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <Pencil size={14} /> Edit
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDelete(entry.id);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50"
-              >
-                <Trash2 size={14} /> Delete
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete Session"
+        message={`Delete the "${entry.topic}" study session?`}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onDelete(entry.id);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </>
   );
 }

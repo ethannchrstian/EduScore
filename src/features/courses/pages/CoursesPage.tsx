@@ -17,55 +17,51 @@ export default function CoursesPage() {
     setEditingCourse(null);
     setModalOpen(true);
   }
-
   function openEdit(course: Course) {
     setEditingCourse(course);
     setModalOpen(true);
   }
-
   function closeModal() {
     setModalOpen(false);
     setEditingCourse(null);
   }
 
   async function handleSubmit(form: CourseFormData) {
-    if (editingCourse) {
-      await editCourse(editingCourse.id, form);
-    } else {
-      await addCourse(form);
-    }
+    if (editingCourse) await editCourse(editingCourse.id, form);
+    else await addCourse(form);
   }
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-8 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
-          <p className="text-sm text-gray-500">
-            {loading
-              ? "Loading…"
-              : `${courses.length} course${courses.length !== 1 ? "s" : ""} enrolled`}
+    <div className="flex flex-col min-h-full animate-in fade-in duration-300">
+      <div className="px-5 pt-10 pb-5">
+        <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          Library
+        </p>
+        <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-zinc-900">
+          Courses
+        </h1>
+        {!loading && (
+          <p className="mt-0.5 text-sm text-zinc-400">
+            {courses.length} enrolled
           </p>
-        </div>
+        )}
       </div>
 
-      {/* Content */}
       <div className="flex-1 px-5 pb-6">
         {loading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, i) => (
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
               <CourseCardSkeleton key={i} />
             ))}
           </div>
         ) : courses.length === 0 ? (
           <EmptyState
-            icon={<BookOpen size={26} />}
+            icon={<BookOpen size={20} strokeWidth={1.5} />}
             title="No courses yet"
             description="Tap the + button to add your first course"
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-3">
             {courses.map((course) => (
               <CourseCard
                 key={course.id}
@@ -78,13 +74,13 @@ export default function CoursesPage() {
         )}
       </div>
 
-      {/* FAB */}
+      {/* FAB — positioned above dock */}
       <button
         onClick={openAdd}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-200 transition-all duration-150 hover:bg-indigo-700 active:scale-95"
+        className="fixed bottom-[5.5rem] right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-300 transition-all duration-200 hover:bg-indigo-700 hover:scale-105 active:scale-95"
         aria-label="Add course"
       >
-        <Plus size={24} strokeWidth={2.5} />
+        <Plus size={22} strokeWidth={2.5} />
       </button>
 
       <CourseFormModal

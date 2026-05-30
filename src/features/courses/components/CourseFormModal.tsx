@@ -1,8 +1,8 @@
+import { useState } from "react";
 import Modal from "../../../shared/components/ui/Modal";
 import Input from "../../../shared/components/ui/Input";
 import Button from "../../../shared/components/ui/Button";
 import type { Course, CourseFormData } from "../services/courseService";
-import { useState } from "react";
 
 const PALETTE = [
   "#6366f1",
@@ -17,19 +17,15 @@ const PALETTE = [
   "#64748b",
 ];
 
-interface CourseFormModalProps {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (form: CourseFormData) => Promise<void>;
-  editingCourse?: Course | null;
-}
-
-// Inner form is remounted fresh each time the modal opens via `key`
 function CourseForm({
   onClose,
   onSubmit,
   editingCourse,
-}: Omit<CourseFormModalProps, "open">) {
+}: {
+  onClose: () => void;
+  onSubmit: (f: CourseFormData) => Promise<void>;
+  editingCourse?: Course | null;
+}) {
   const initial: CourseFormData = editingCourse
     ? {
         name: editingCourse.name,
@@ -39,7 +35,6 @@ function CourseForm({
         color: editingCourse.color,
       }
     : { name: "", code: "", description: "", semester: "", color: PALETTE[0] };
-
   const [fields, setFields] = useState<CourseFormData>(initial);
   const [errors, setErrors] = useState<
     Partial<Record<keyof CourseFormData, string>>
@@ -48,8 +43,8 @@ function CourseForm({
 
   function validate() {
     const e: Partial<Record<keyof CourseFormData, string>> = {};
-    if (!fields.name.trim()) e.name = "Course name is required";
-    if (!fields.code.trim()) e.code = "Course code is required";
+    if (!fields.name.trim()) e.name = "Required";
+    if (!fields.code.trim()) e.code = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -88,48 +83,52 @@ function CourseForm({
         error={errors.code}
       />
       <Input
-        label="Semester (optional)"
+        label="Semester"
         placeholder="e.g. 2024/2025 Ganjil"
         value={fields.semester}
         onChange={set("semester")}
       />
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-gray-700">
-          Description (optional)
+
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          Color
         </label>
-        <textarea
-          rows={2}
-          placeholder="Short description..."
-          value={fields.description}
-          onChange={set("description")}
-          className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-150"
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-gray-700">Color</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2.5 flex-wrap">
           {PALETTE.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setFields((p) => ({ ...p, color: c }))}
               className="h-7 w-7 rounded-full transition-transform hover:scale-110 focus:outline-none"
-              style={{ backgroundColor: c }}
-              aria-label={c}
-            >
-              {fields.color === c && (
-                <span className="flex h-full w-full items-center justify-center text-white text-xs font-bold">
-                  ✓
-                </span>
-              )}
-            </button>
+              style={{
+                backgroundColor: c,
+                boxShadow:
+                  fields.color === c
+                    ? `0 0 0 3px white, 0 0 0 5px ${c}`
+                    : "none",
+              }}
+            />
           ))}
         </div>
       </div>
-      <div className="flex gap-3 pt-1">
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          Notes
+        </label>
+        <textarea
+          rows={2}
+          placeholder="Optional description..."
+          value={fields.description}
+          onChange={set("description")}
+          className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+        />
+      </div>
+
+      <div className="flex gap-2 pt-1">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           className="flex-1"
           onClick={onClose}
           disabled={loading}
@@ -149,14 +148,18 @@ export default function CourseFormModal({
   onClose,
   onSubmit,
   editingCourse,
-}: CourseFormModalProps) {
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (f: CourseFormData) => Promise<void>;
+  editingCourse?: Course | null;
+}) {
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={editingCourse ? "Edit Course" : "Add Course"}
+      title={editingCourse ? "Edit Course" : "New Course"}
     >
-      {/* key remounts CourseForm fresh on every open, no useEffect needed */}
       <CourseForm
         key={open ? (editingCourse?.id ?? "new") : "closed"}
         onClose={onClose}

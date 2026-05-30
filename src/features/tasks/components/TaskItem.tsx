@@ -1,7 +1,5 @@
 import { useState } from "react";
 import {
-  MoreVertical,
-  Pencil,
   Trash2,
   CheckCircle2,
   Circle,
@@ -9,6 +7,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { Task, TaskStatus, TaskPriority } from "../services/taskService";
+import ConfirmDialog from "../../../shared/components/ui/ConfirmDialog";
 
 interface TaskItemProps {
   task: Task;
@@ -17,18 +16,18 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
 }
 
-const PRIORITY_DOT: Record<TaskPriority, string> = {
-  LOW: "bg-gray-300",
-  MEDIUM: "bg-amber-400",
-  HIGH: "bg-red-500",
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  LOW: "bg-zinc-200 text-zinc-500",
+  MEDIUM: "bg-amber-100 text-amber-600",
+  HIGH: "bg-red-100 text-red-500",
 };
 
 const STATUS_ICON: Record<TaskStatus, React.ReactNode> = {
   COMPLETED: (
-    <CheckCircle2 size={20} className="text-emerald-500 flex-shrink-0" />
+    <CheckCircle2 size={20} className="text-indigo-500 flex-shrink-0" />
   ),
-  IN_PROGRESS: <Clock size={20} className="text-blue-400 flex-shrink-0" />,
-  NOT_STARTED: <Circle size={20} className="text-gray-300 flex-shrink-0" />,
+  IN_PROGRESS: <Clock size={20} className="text-amber-400 flex-shrink-0" />,
+  NOT_STARTED: <Circle size={20} className="text-zinc-300 flex-shrink-0" />,
   LATE: <AlertCircle size={20} className="text-red-400 flex-shrink-0" />,
 };
 
@@ -38,17 +37,17 @@ function formatDue(
   if (!dueDate) return null;
   const due = new Date(dueDate);
   const now = new Date();
-  const diffDays = Math.ceil(
-    (due.getTime() - now.setHours(0, 0, 0, 0)) / 86400000,
-  );
-  if (diffDays < 0) return { label: "Overdue", color: "text-red-500" };
-  if (diffDays === 0) return { label: "Due today", color: "text-red-500" };
-  if (diffDays === 1) return { label: "1 day left", color: "text-amber-500" };
-  if (diffDays <= 3)
-    return { label: `${diffDays} days left`, color: "text-amber-500" };
+  now.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  const d = Math.round((due.getTime() - now.getTime()) / 86400000);
+  if (d < 0) return { label: "Overdue", color: "text-red-500 font-semibold" };
+  if (d === 0)
+    return { label: "Due today", color: "text-red-500 font-semibold" };
+  if (d === 1) return { label: "1 day left", color: "text-amber-500" };
+  if (d <= 3) return { label: `${d} days left`, color: "text-amber-500" };
   return {
     label: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    color: "text-gray-400",
+    color: "text-zinc-400",
   };
 }
 
@@ -58,93 +57,74 @@ export default function TaskItem({
   onEdit,
   onDelete,
 }: TaskItemProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const due = formatDue(task.dueDate);
   const isCompleted = task.status === "COMPLETED";
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
-    <div
-      className={`flex items-start gap-3 rounded-xl border bg-white p-3.5 transition-all duration-150 ${
-        isCompleted ? "border-gray-100 opacity-60" : "border-gray-100 shadow-sm"
-      }`}
-    >
-      {/* Status toggle */}
-      <button
-        onClick={() => onToggle(task.id, task.status)}
-        className="mt-0.5 transition-transform hover:scale-110 active:scale-95"
-        aria-label="Toggle status"
+    <>
+      <div
+        onClick={() => onEdit(task)}
+        className={`flex items-start gap-3 rounded-xl border bg-white px-4 py-3.5 cursor-pointer transition-all duration-200 hover:border-indigo-100 hover:shadow-sm active:scale-[0.99] ${
+          isCompleted ? "border-zinc-100 opacity-60" : "border-zinc-100"
+        }`}
       >
-        {STATUS_ICON[task.status]}
-      </button>
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col gap-0.5 min-w-0">
-        <span
-          className={`text-sm font-medium leading-snug ${
-            isCompleted ? "line-through text-gray-400" : "text-gray-900"
-          }`}
-        >
-          {task.title}
-        </span>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Priority dot */}
-          <span className="flex items-center gap-1 text-xs text-gray-400">
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[task.priority]}`}
-            />
-            {task.priority.toLowerCase()}
-          </span>
-          {/* Due date */}
-          {due && (
-            <span className={`text-xs font-medium ${due.color}`}>
-              {due.label}
-            </span>
-          )}
-        </div>
-        {task.description && (
-          <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">
-            {task.description}
-          </p>
-        )}
-      </div>
-
-      {/* Kebab menu */}
-      <div className="relative flex-shrink-0">
+        {/* Status toggle */}
         <button
-          onClick={() => setMenuOpen((p) => !p)}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(task.id, task.status);
+          }}
+          className="mt-0.5 flex-shrink-0 transition-transform hover:scale-110 active:scale-90"
         >
-          <MoreVertical size={15} />
+          {STATUS_ICON[task.status]}
         </button>
-        {menuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div className="absolute right-0 top-8 z-20 min-w-[130px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(task);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <Pencil size={14} /> Edit
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDelete(task.id);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50"
-              >
-                <Trash2 size={14} /> Delete
-              </button>
-            </div>
-          </>
-        )}
+
+        {/* Content */}
+        <div className="flex flex-1 flex-col gap-1 min-w-0">
+          <span
+            className={`text-sm leading-snug ${isCompleted ? "line-through text-zinc-400" : "font-medium text-zinc-900"}`}
+          >
+            {task.title}
+          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PRIORITY_COLOR[task.priority]}`}
+            >
+              {task.priority.toLowerCase()}
+            </span>
+            {due && <span className={`text-xs ${due.color}`}>{due.label}</span>}
+            {task.description && (
+              <span className="text-xs text-zinc-400 truncate">
+                {task.description}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Delete — always visible */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirmOpen(true);
+          }}
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+          aria-label="Delete task"
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
-    </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete Task"
+        message={`Delete "${task.title}"?`}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onDelete(task.id);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </>
   );
 }

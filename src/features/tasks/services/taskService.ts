@@ -38,6 +38,14 @@ interface RawTask {
 }
 
 function mapTask(raw: RawTask): Task {
+  let status = raw.status;
+  if (status !== "COMPLETED" && raw.due_date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(raw.due_date);
+    due.setHours(0, 0, 0, 0);
+    if (due < today) status = "LATE";
+  }
   return {
     id: raw.id,
     matakuliahId: raw.matakuliah_id,
@@ -45,7 +53,7 @@ function mapTask(raw: RawTask): Task {
     description: raw.description,
     dueDate: raw.due_date,
     priority: raw.priority,
-    status: raw.status,
+    status,
     completedAt: raw.completed_at,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,

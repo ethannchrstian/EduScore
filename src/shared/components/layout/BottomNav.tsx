@@ -1,31 +1,42 @@
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, BookOpen, Clock, User } from "lucide-react";
 
-export default function BottomNav() {
-  const navItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/courses", icon: BookOpen, label: "Courses" },
-    { to: "/tracker", icon: Clock, label: "Tracker" },
-    { to: "/profile", icon: User, label: "Profile" },
-  ];
+const navItems = [
+  { to: "/", icon: LayoutDashboard },
+  { to: "/courses", icon: BookOpen },
+  { to: "/tracker", icon: Clock },
+  { to: "/profile", icon: User },
+];
 
+export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 z-50 w-full max-w-md border-t border-gray-200 bg-white pb-safe">
-      <div className="flex h-16 items-center justify-around px-2">
-        {navItems.map(({ to, icon: Icon, label }) => (
+    <nav className="fixed bottom-0 z-50 w-full max-w-md px-4 pb-4">
+      <div className="flex h-16 items-center justify-around rounded-2xl border border-zinc-200/60 bg-white/90 px-3 shadow-xl shadow-zinc-900/10 backdrop-blur-xl">
+        {navItems.map(({ to, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
+            end={to === "/"}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center w-full h-full space-y-1 ${
+              `relative flex h-11 w-14 items-center justify-center rounded-xl transition-all duration-200 ${
                 isActive
                   ? "text-indigo-600"
-                  : "text-gray-500 hover:text-gray-900"
+                  : "text-zinc-400 hover:text-zinc-600"
               }`
             }
           >
-            <Icon size={24} strokeWidth={2} />
-            <span className="text-[10px] font-medium">{label}</span>
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <span className="absolute inset-0 rounded-xl bg-indigo-50" />
+                )}
+                <Icon
+                  size={20}
+                  strokeWidth={isActive ? 2.5 : 1.8}
+                  className="relative z-10"
+                />
+              </>
+            )}
           </NavLink>
         ))}
       </div>

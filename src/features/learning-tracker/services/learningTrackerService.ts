@@ -113,3 +113,26 @@ export async function deleteEntry(id: string): Promise<void> {
     .eq("id", id);
   if (error) throw error;
 }
+
+export interface AllTrackerEntry extends TrackerEntry {
+  courseName: string;
+  courseColor: string;
+}
+
+interface RawAllEntry extends RawEntry {
+  matakuliah: { name: string; color: string; user_id: string };
+}
+
+export async function fetchAllEntries(userId: string): Promise<AllTrackerEntry[]> {
+  const { data, error } = await supabase
+    .from("learning_tracker")
+    .select("*, matakuliah!inner(name, color, user_id)")
+    .eq("matakuliah.user_id", userId)
+    .order("study_date", { ascending: false });
+  if (error) throw error;
+  return (data as unknown as RawAllEntry[]).map((raw) => ({
+    ...mapEntry(raw),
+    courseName: raw.matakuliah.name,
+    courseColor: raw.matakuliah.color,
+  }));
+}

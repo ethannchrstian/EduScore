@@ -23,6 +23,7 @@ import type {
 type Tab = "tasks" | "tracker";
 
 function formatDuration(mins: number): string {
+  if (mins === 0) return "0m";
   if (mins < 60) return `${mins}m`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -60,79 +61,47 @@ export default function CourseDetailPage() {
   const [trackerModalOpen, setTrackerModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TrackerEntry | null>(null);
 
-  // Task handlers
-  function openAddTask() {
-    setEditingTask(null);
-    setTaskModalOpen(true);
-  }
-  function openEditTask(task: Task) {
-    setEditingTask(task);
-    setTaskModalOpen(true);
-  }
-  function closeTaskModal() {
-    setTaskModalOpen(false);
-    setEditingTask(null);
-  }
-
   async function handleTaskSubmit(form: TaskFormData) {
     if (editingTask) await editTask(editingTask.id, form);
     else await addTask(form);
     await refreshProgress();
   }
-
   async function handleToggle(taskId: string, status: TaskStatus) {
     await toggleStatus(taskId, status);
     await refreshProgress();
   }
-
   async function handleDeleteTask(taskId: string) {
     await removeTask(taskId);
     await refreshProgress();
   }
-
-  // Tracker handlers
-  function openAddEntry() {
-    setEditingEntry(null);
-    setTrackerModalOpen(true);
-  }
-  function openEditEntry(entry: TrackerEntry) {
-    setEditingEntry(entry);
-    setTrackerModalOpen(true);
-  }
-  function closeTrackerModal() {
-    setTrackerModalOpen(false);
-    setEditingEntry(null);
-  }
-
   async function handleTrackerSubmit(form: TrackerFormData) {
     if (editingEntry) await editEntry(editingEntry.id, form);
     else await addEntry(form);
   }
 
-  // Derived progress from live task state
   const completedCount = tasks.filter((t) => t.status === "COMPLETED").length;
   const progress =
     tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
   const accentColor = course?.color ?? "#6366f1";
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 pt-6 pb-4">
+    <div className="flex flex-col min-h-full animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-8 pb-4">
         <button
           onClick={() => navigate("/courses")}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 transition-colors"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
         </button>
         {courseLoading ? (
           <Skeleton className="h-5 w-40" />
         ) : (
           <div className="flex flex-col min-w-0">
-            <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">
+            <h1 className="text-lg font-bold tracking-tight text-zinc-900 truncate">
               {course?.name}
             </h1>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-zinc-400">
               {course?.code}
               {course?.semester ? ` · ${course.semester}` : ""}
             </span>
@@ -140,61 +109,60 @@ export default function CourseDetailPage() {
         )}
       </div>
 
-      {/* Stats row */}
+      {/* Stats cards */}
       {!courseLoading && course && (
-        <div className="mx-4 mb-4 flex gap-3">
-          {/* Progress card */}
-          <div className="flex-1 rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">
-                Progress
-              </span>
-              <span
-                className="text-sm font-bold"
-                style={{ color: accentColor }}
-              >
-                {progress}%
-              </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+        <div className="mx-4 mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-white border border-zinc-100 p-4">
+            <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+              Progress
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight text-zinc-900">
+              {progress}
+              <span className="text-lg font-normal text-zinc-400">%</span>
+            </p>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
               <div
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${progress}%`, backgroundColor: accentColor }}
               />
             </div>
-            <p className="mt-1.5 text-xs text-gray-400">
-              {completedCount}/{tasks.length} tasks
+            <p className="mt-1.5 text-xs text-zinc-400">
+              {completedCount}/{tasks.length} done
             </p>
           </div>
-
-          {/* Study time card */}
-          <div className="flex-1 rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-gray-500">
+          <div className="rounded-2xl bg-white border border-zinc-100 p-4">
+            <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
               Study Time
-            </span>
-            <div className="flex items-end gap-1 mt-1">
-              <span className="text-xl font-bold text-gray-900">
-                {formatDuration(totalMins)}
-              </span>
-            </div>
-            <p className="text-xs text-gray-400">
-              {entries.length} session{entries.length !== 1 ? "s" : ""}
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight text-zinc-900">
+              {formatDuration(totalMins)}
+            </p>
+            <p className="mt-2 text-xs text-zinc-400">
+              {entries.length} session{entries.length !== 1 ? "s" : ""} logged
             </p>
           </div>
         </div>
       )}
 
+      {/* Description */}
+      {!courseLoading && course?.description && (
+        <div className="mx-4 mb-4 rounded-2xl border border-zinc-100 bg-white px-4 py-3.5">
+          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-1">
+            About
+          </p>
+          <p className="text-sm text-zinc-600 leading-relaxed">
+            {course.description}
+          </p>
+        </div>
+      )}
+
       {/* Tabs */}
-      <div className="mx-4 mb-4 flex rounded-xl bg-gray-100 p-1">
+      <div className="mx-4 mb-4 flex rounded-xl bg-zinc-100 p-1">
         {(["tasks", "tracker"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all duration-200 ${
-              tab === t
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all duration-200 ${t === tab ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}
           >
             {t === "tasks" ? "Tasks" : "Study Log"}
           </button>
@@ -202,52 +170,58 @@ export default function CourseDetailPage() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 px-4 pb-24">
+      <div className="flex-1 px-4 pb-4">
         {tab === "tasks" ? (
           tasksLoading ? (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
           ) : tasks.length === 0 ? (
             <EmptyState
-              icon={<BookOpen size={24} />}
+              icon={<BookOpen size={20} strokeWidth={1.5} />}
               title="No tasks yet"
               description="Tap + to add your first task"
             />
           ) : (
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               {tasks.map((task) => (
                 <TaskItem
                   key={task.id}
                   task={task}
                   onToggle={handleToggle}
-                  onEdit={openEditTask}
+                  onEdit={(t) => {
+                    setEditingTask(t);
+                    setTaskModalOpen(true);
+                  }}
                   onDelete={handleDeleteTask}
                 />
               ))}
             </div>
           )
         ) : trackerLoading ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}
           </div>
         ) : entries.length === 0 ? (
           <EmptyState
-            icon={<Clock size={24} />}
+            icon={<Clock size={20} strokeWidth={1.5} />}
             title="No sessions logged"
             description="Tap + to log your first study session"
           />
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {entries.map((entry) => (
               <TrackerEntryItem
                 key={entry.id}
                 entry={entry}
-                onEdit={openEditEntry}
+                onEdit={(e) => {
+                  setEditingEntry(e);
+                  setTrackerModalOpen(true);
+                }}
                 onDelete={removeEntry}
               />
             ))}
@@ -255,29 +229,43 @@ export default function CourseDetailPage() {
         )}
       </div>
 
-      {/* FAB */}
+      {/* FAB — above dock */}
       <button
-        onClick={tab === "tasks" ? openAddTask : openAddEntry}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all duration-150 hover:opacity-90 active:scale-95"
+        onClick={
+          tab === "tasks"
+            ? () => {
+                setEditingTask(null);
+                setTaskModalOpen(true);
+              }
+            : () => {
+                setEditingEntry(null);
+                setTrackerModalOpen(true);
+              }
+        }
+        className="fixed bottom-[5.5rem] right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
         style={{
           backgroundColor: accentColor,
           boxShadow: `0 8px 24px ${accentColor}55`,
         }}
-        aria-label={tab === "tasks" ? "Add task" : "Log session"}
       >
-        <Plus size={24} strokeWidth={2.5} />
+        <Plus size={22} strokeWidth={2.5} />
       </button>
 
       <TaskFormModal
         open={taskModalOpen}
-        onClose={closeTaskModal}
+        onClose={() => {
+          setTaskModalOpen(false);
+          setEditingTask(null);
+        }}
         onSubmit={handleTaskSubmit}
         editingTask={editingTask}
       />
-
       <TrackerFormModal
         open={trackerModalOpen}
-        onClose={closeTrackerModal}
+        onClose={() => {
+          setTrackerModalOpen(false);
+          setEditingEntry(null);
+        }}
         onSubmit={handleTrackerSubmit}
         editingEntry={editingEntry}
       />

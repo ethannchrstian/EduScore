@@ -29,3 +29,7 @@ dist-ssr
 .env.development
 .env.production
 .env.local
+
+# AI Context Blueprints
+GEMINI.md
+CLAUDE.md

@@ -17,7 +17,7 @@ const EMPTY: DashboardData = {
   totalTasks: 0,
   completedTasks: 0,
   urgentTasks: [],
-  todayStudyMins: 0,
+  studyLogs: [],
   totalCourses: 0,
 };
 
