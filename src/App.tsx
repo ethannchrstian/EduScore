@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./shared/context/AuthContext";
 import { ToastProvider } from "./shared/context/ToastContext";
+import { RefreshProvider } from "./shared/context/RefreshContext";
 import AppShell from "./shared/components/layout/AppShell";
 import ProtectedRoute from "./shared/components/layout/ProtectedRoute";
 import AuthPage from "./features/auth/pages/AuthPage";
@@ -14,6 +15,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
+        <RefreshProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<AuthPage />} />
@@ -28,6 +30,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+        </RefreshProvider>
       </ToastProvider>
     </AuthProvider>
   );

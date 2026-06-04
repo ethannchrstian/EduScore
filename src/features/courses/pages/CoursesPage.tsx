@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Plus, BookOpen } from "lucide-react";
 import { useCourses } from "../hooks/useCourses";
 import CourseCard from "../components/CourseCard";
@@ -10,7 +11,11 @@ import type { Course, CourseFormData } from "../services/courseService";
 export default function CoursesPage() {
   const { courses, loading, addCourse, editCourse, removeCourse } =
     useCourses();
-  const [modalOpen, setModalOpen] = useState(false);
+  const location = useLocation();
+  // Auto-open the form when sent here from the Getting Started checklist.
+  const [modalOpen, setModalOpen] = useState(
+    () => (location.state as { autoNew?: boolean } | null)?.autoNew === true,
+  );
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
   function openAdd() {

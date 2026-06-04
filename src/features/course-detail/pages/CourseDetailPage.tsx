@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Plus, BookOpen, Clock, ArrowUpDown, CheckCircle2 } from "lucide-react";
 import { useCourseDetail } from "../hooks/useCourseDetail";
 import { useTasks } from "../../tasks/hooks/useTasks";
@@ -99,6 +99,9 @@ function formatDuration(mins: number): string {
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const autoNewTask =
+    (location.state as { autoNewTask?: boolean } | null)?.autoNewTask === true;
   const {
     course,
     loading: courseLoading,
@@ -127,7 +130,7 @@ export default function CourseDetailPage() {
     tabSlideDir.current = next === "tracker" ? "right" : "left";
     setTab(next);
   }
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(autoNewTask);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [trackerModalOpen, setTrackerModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TrackerEntry | null>(null);

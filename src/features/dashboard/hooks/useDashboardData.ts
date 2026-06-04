@@ -5,6 +5,7 @@ import {
   type DashboardData,
 } from "../services/dashboardService";
 import { useToast } from "../../../shared/context/ToastContext";
+import { useRefresh } from "../../../shared/context/RefreshContext";
 
 interface UseDashboardDataReturn {
   data: DashboardData | null;
@@ -24,6 +25,7 @@ const EMPTY: DashboardData = {
 export function useDashboardData(): UseDashboardDataReturn {
   const { user } = useAuthContext();
   const toast = useToast();
+  const { dataVersion } = useRefresh();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const toastRef = useRef(toast);
@@ -74,7 +76,8 @@ export function useDashboardData(): UseDashboardDataReturn {
     return () => {
       cancelled = true;
     };
-  }, []);
+  // dataVersion increments when data changes elsewhere (quick-add, checklist, etc.)
+  }, [dataVersion]);
 
   return { data, loading, refresh: load };
 }

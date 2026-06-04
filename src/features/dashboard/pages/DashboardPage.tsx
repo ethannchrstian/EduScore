@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCountUp } from "../../../shared/hooks/useCountUp";
 import { useNavigate } from "react-router-dom";
 import {
@@ -16,6 +16,8 @@ import {
   getGreeting,
 } from "../../../shared/utils/date";
 import Skeleton from "../../../shared/components/ui/Skeleton";
+import GettingStartedCard from "../../onboarding/components/GettingStartedCard";
+import { fetchCourses } from "../../courses/services/courseService";
 
 type Filter = "today" | "7d" | "all";
 const FILTERS: { key: Filter; label: string }[] = [
@@ -30,6 +32,23 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("today");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Most recent course id — the "create a task" checklist step routes here.
+  const [firstCourseId, setFirstCourseId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetchCourses(user.id)
+      .then((list) => {
+        if (!cancelled) setFirstCourseId(list[0]?.id ?? null);
+      })
+      .catch(() => {
+        /* non-critical */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const fullName = user?.user_metadata?.full_name as string | undefined;
   const firstName = fullName?.split(" ")[0] ?? "there";
@@ -132,6 +151,15 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Getting Started checklist (new users) */}
+      <GettingStartedCard
+        loading={loading}
+        hasCourse={(data?.totalCourses ?? 0) > 0}
+        hasTask={(data?.totalTasks ?? 0) > 0}
+        hasLog={(data?.studyLogs?.length ?? 0) > 0}
+        firstCourseId={firstCourseId}
+      />
 
       {/* Filter selector */}
       <div className="relative flex justify-end">

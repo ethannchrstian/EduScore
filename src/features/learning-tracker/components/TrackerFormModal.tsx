@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Clock } from "lucide-react";
 import Modal from "../../../shared/components/ui/Modal";
 import Input from "../../../shared/components/ui/Input";
 import Button from "../../../shared/components/ui/Button";
@@ -157,6 +158,8 @@ export default function TrackerFormModal({
       open={open}
       onClose={onClose}
       title={editingEntry ? "Edit Session" : "Log Study Session"}
+      icon={<Clock size={15} />}
+      iconClassName="bg-violet-50 text-violet-500"
     >
       <TrackerForm
         key={open ? (editingEntry?.id ?? "new") : "closed"}

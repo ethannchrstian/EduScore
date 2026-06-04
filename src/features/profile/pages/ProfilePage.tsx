@@ -1,16 +1,18 @@
 import { useState, useMemo } from "react";
-import { LogOut, Mail, BookOpen, CheckCircle2, Clock, ListTodo } from "lucide-react";
+import { LogOut, Mail, BookOpen, CheckCircle2, Clock, ListTodo, Compass, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../../../shared/context/AuthContext";
 import { useDashboardData } from "../../dashboard/hooks/useDashboardData";
 import { signOut } from "../../auth/services/authService";
 import { useToast } from "../../../shared/context/ToastContext";
 import { formatDuration } from "../../../shared/utils/date";
+import { useTour } from "../../onboarding/components/TourProvider";
 import Button from "../../../shared/components/ui/Button";
 
 export default function ProfilePage() {
   const { user } = useAuthContext();
   const { data } = useDashboardData();
+  const { startTour } = useTour();
   const toast = useToast();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
@@ -130,6 +132,21 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+
+        {/* App tour */}
+        <button
+          onClick={startTour}
+          className="flex items-center gap-3 rounded-2xl bg-white border border-zinc-100 px-4 py-4 text-left hover:border-indigo-100 transition-colors"
+        >
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
+            <Compass size={16} strokeWidth={1.5} />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-zinc-900">App tour</span>
+            <span className="text-xs text-zinc-400">Replay the quick walkthrough</span>
+          </div>
+          <ChevronRight size={16} className="ml-auto flex-shrink-0 text-zinc-300" />
+        </button>
 
         <Button
           variant="danger"

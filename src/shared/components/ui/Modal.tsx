@@ -8,6 +8,10 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  /** Optional icon shown in a colored badge before the title. */
+  icon?: React.ReactNode;
+  /** Tailwind classes for the icon badge, e.g. "bg-indigo-50 text-indigo-500". */
+  iconClassName?: string;
 }
 
 export default function Modal({
@@ -16,6 +20,8 @@ export default function Modal({
   title,
   children,
   className,
+  icon,
+  iconClassName,
 }: ModalProps) {
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -52,9 +58,21 @@ export default function Modal({
       >
         <div className="mx-auto mb-5 h-1 w-8 rounded-full bg-zinc-200 sm:hidden" />
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-            {title}
-          </h2>
+          <div className="flex items-center gap-2.5">
+            {icon && (
+              <span
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-xl",
+                  iconClassName ?? "bg-zinc-100 text-zinc-500",
+                )}
+              >
+                {icon}
+              </span>
+            )}
+            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
+              {title}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"

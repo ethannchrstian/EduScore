@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BookOpen } from "lucide-react";
 import Modal from "../../../shared/components/ui/Modal";
 import Input from "../../../shared/components/ui/Input";
 import Button from "../../../shared/components/ui/Button";
@@ -159,6 +160,8 @@ export default function CourseFormModal({
       open={open}
       onClose={onClose}
       title={editingCourse ? "Edit Course" : "New Course"}
+      icon={<BookOpen size={15} />}
+      iconClassName="bg-indigo-50 text-indigo-500"
     >
       <CourseForm
         key={open ? (editingCourse?.id ?? "new") : "closed"}

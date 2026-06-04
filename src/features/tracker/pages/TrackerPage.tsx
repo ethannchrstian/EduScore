@@ -1,20 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Clock, CalendarDays, Plus, ChevronDown } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Clock, CalendarDays, Plus } from "lucide-react";
 import { useAuthContext } from "../../../shared/context/AuthContext";
 import { useToast } from "../../../shared/context/ToastContext";
 import { formatDuration } from "../../../shared/utils/date";
 import {
   fetchAllEntries,
-  createEntry,
   type AllTrackerEntry,
-  type TrackerFormData,
 } from "../../learning-tracker/services/learningTrackerService";
-import { fetchCourses } from "../../courses/services/courseService";
 import Skeleton from "../../../shared/components/ui/Skeleton";
 import EmptyState from "../../../shared/components/ui/EmptyState";
-import Modal from "../../../shared/components/ui/Modal";
-import Input from "../../../shared/components/ui/Input";
-import Button from "../../../shared/components/ui/Button";
+import QuickLogModal from "../../learning-tracker/components/QuickLogModal";
 
 type Filter = "today" | "7d" | "30d";
 const FILTERS: { key: Filter; label: string }[] = [
@@ -22,14 +18,6 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "7d", label: "7 days" },
   { key: "30d", label: "30 days" },
 ];
-
-const DURATION_PRESETS = [15, 30, 45, 60, 90, 120];
-
-interface CourseSummary {
-  id: string;
-  name: string;
-  color: string;
-}
 
 interface DayGroup {
   date: string;
@@ -77,187 +65,17 @@ function filterEntries(entries: AllTrackerEntry[], filter: Filter): AllTrackerEn
   return entries.filter((e) => new Date(e.studyDate) >= cutoff);
 }
 
-function QuickLogModal({
-  open,
-  onClose,
-  courses,
-  onSubmit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  courses: CourseSummary[];
-  onSubmit: (matakuliahId: string, form: TrackerFormData) => Promise<void>;
-}) {
-  const today = new Date().toISOString().slice(0, 10);
-  const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
-  const [fields, setFields] = useState<TrackerFormData>({
-    studyDate: today,
-    topic: "",
-    durationMins: 30,
-    notes: "",
-  });
-  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setCourseId(courses[0]?.id ?? "");
-      setFields({ studyDate: today, topic: "", durationMins: 30, notes: "" });
-      setErrors({});
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  function validate() {
-    const e: Record<string, string> = {};
-    if (!courseId) e.course = "Select a course";
-    if (!fields.topic.trim()) e.topic = "Required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
-
-  async function handleSubmit(ev: React.FormEvent) {
-    ev.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      await onSubmit(courseId, fields);
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const durationLabel =
-    fields.durationMins < 60
-      ? `${fields.durationMins}m`
-      : `${Math.floor(fields.durationMins / 60)}h${fields.durationMins % 60 ? ` ${fields.durationMins % 60}m` : ""}`;
-
-  if (courses.length === 0) {
-    return (
-      <Modal open={open} onClose={onClose} title="Log Study Session">
-        <p className="text-sm text-zinc-500 text-center py-6">
-          Add a course first before logging a study session.
-        </p>
-        <Button variant="outline" className="w-full" onClick={onClose}>
-          Close
-        </Button>
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Log Study Session">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Course selector */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-            Course
-          </label>
-          <div className="relative">
-            <select
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-              className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
-            >
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={14}
-              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
-            />
-          </div>
-          {errors.course && (
-            <span className="text-xs text-red-500">{errors.course}</span>
-          )}
-        </div>
-
-        <Input
-          label="Topic"
-          placeholder="e.g. Binary Trees, Chapter 4"
-          value={fields.topic}
-          onChange={(e) => setFields((p) => ({ ...p, topic: e.target.value }))}
-          error={errors.topic}
-        />
-
-        <Input
-          label="Date"
-          type="date"
-          value={fields.studyDate}
-          onChange={(e) =>
-            setFields((p) => ({ ...p, studyDate: e.target.value }))
-          }
-        />
-
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-            Duration —{" "}
-            <span className="text-indigo-600 font-semibold">{durationLabel}</span>
-          </label>
-          <div className="flex gap-2 flex-wrap">
-            {DURATION_PRESETS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setFields((p) => ({ ...p, durationMins: d }))}
-                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
-                  fields.durationMins === d
-                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-200"
-                    : "border-zinc-200 text-zinc-500 bg-white hover:border-indigo-200 hover:text-indigo-500"
-                }`}
-              >
-                {d >= 60 ? `${d / 60}h` : `${d}m`}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-            Notes
-          </label>
-          <textarea
-            rows={2}
-            placeholder="What did you cover?"
-            value={fields.notes}
-            onChange={(e) =>
-              setFields((p) => ({ ...p, notes: e.target.value }))
-            }
-            className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
-          />
-        </div>
-
-        <div className="flex gap-2 pt-1">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" className="flex-1" loading={loading}>
-            Log Session
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
 export default function TrackerPage() {
   const { user } = useAuthContext();
   const toast = useToast();
   const [entries, setEntries] = useState<AllTrackerEntry[]>([]);
-  const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("7d");
-  const [logOpen, setLogOpen] = useState(false);
+  const location = useLocation();
+  // Auto-open the log form when sent here from the Getting Started checklist.
+  const [logOpen, setLogOpen] = useState(
+    () => (location.state as { autoLog?: boolean } | null)?.autoLog === true,
+  );
   const toastRef = useRef(toast);
   useEffect(() => {
     toastRef.current = toast;
@@ -269,12 +87,8 @@ export default function TrackerPage() {
       return;
     }
     try {
-      const [allEntries, allCourses] = await Promise.all([
-        fetchAllEntries(user.id),
-        fetchCourses(user.id),
-      ]);
+      const allEntries = await fetchAllEntries(user.id);
       setEntries(allEntries);
-      setCourses(allCourses.map((c) => ({ id: c.id, name: c.name, color: c.color })));
     } catch {
       toastRef.current("Failed to load study log", "error");
     } finally {
@@ -285,12 +99,6 @@ export default function TrackerPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  async function handleLogSession(matakuliahId: string, form: TrackerFormData) {
-    await createEntry(matakuliahId, form);
-    await load();
-    toast("Session logged", "success");
-  }
 
   const filtered = filterEntries(entries, filter);
   const totalFiltered = filtered.reduce((s, e) => s + e.durationMins, 0);
@@ -441,8 +249,7 @@ export default function TrackerPage() {
       <QuickLogModal
         open={logOpen}
         onClose={() => setLogOpen(false)}
-        courses={courses}
-        onSubmit={handleLogSession}
+        onLogged={load}
       />
     </div>
   );
