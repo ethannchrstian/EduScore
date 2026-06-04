@@ -70,6 +70,45 @@ export async function fetchTasks(matakuliahId: string): Promise<Task[]> {
   return (data as RawTask[]).map(mapTask);
 }
 
+export interface SearchTask {
+  id: string;
+  title: string;
+  matakuliahId: string;
+  courseName: string;
+  courseColor: string;
+  status: TaskStatus;
+  dueDate: string | null;
+}
+
+interface RawSearchTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  due_date: string | null;
+  matakuliah_id: string;
+  matakuliah: { name: string; color: string; user_id: string };
+}
+
+// All of a user's tasks across courses, with course info — used for search.
+export async function fetchAllTasks(userId: string): Promise<SearchTask[]> {
+  const { data, error } = await supabase
+    .from("tugas")
+    .select(
+      "id, title, status, due_date, matakuliah_id, matakuliah!inner(name, color, user_id)",
+    )
+    .eq("matakuliah.user_id", userId);
+  if (error) throw error;
+  return (data as unknown as RawSearchTask[]).map((r) => ({
+    id: r.id,
+    title: r.title,
+    matakuliahId: r.matakuliah_id,
+    courseName: r.matakuliah.name,
+    courseColor: r.matakuliah.color,
+    status: r.status,
+    dueDate: r.due_date,
+  }));
+}
+
 export async function createTask(
   matakuliahId: string,
   form: TaskFormData,

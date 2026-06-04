@@ -38,6 +38,12 @@ export default function CourseCard({
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const semesterLabel = course.semester
+    ? /^\d+$/.test(course.semester)
+      ? `Semester ${course.semester}`
+      : course.semester
+    : null;
+
   return (
     <>
       <div
@@ -54,15 +60,17 @@ export default function CourseCard({
                 {course.name}
               </span>
               <div className="flex items-center gap-2">
-                <span
-                  className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
-                  style={{ backgroundColor: course.color }}
-                >
-                  {course.code}
-                </span>
-                {course.semester && (
+                {course.code && (
+                  <span
+                    className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                    style={{ backgroundColor: course.color }}
+                  >
+                    {course.code}
+                  </span>
+                )}
+                {semesterLabel && (
                   <span className="text-[10px] text-zinc-400 truncate">
-                    {course.semester}
+                    {semesterLabel}
                   </span>
                 )}
               </div>

@@ -1,41 +1,45 @@
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ChevronDown, Pipette } from "lucide-react";
 import Modal from "../../../shared/components/ui/Modal";
 import Input from "../../../shared/components/ui/Input";
 import Button from "../../../shared/components/ui/Button";
 import type { Course, CourseFormData } from "../services/courseService";
+import { PALETTE } from "../colors";
 
-const PALETTE = [
-  "#6366f1",
-  "#8b5cf6",
-  "#ec4899",
-  "#f43f5e",
-  "#f97316",
-  "#eab308",
-  "#22c55e",
-  "#14b8a6",
-  "#0ea5e9",
-  "#64748b",
-];
+const SEMESTERS = Array.from({ length: 14 }, (_, i) => i + 1);
+
+// Keep only valid 1–14 semester numbers; legacy free-text values become "" (unset).
+function normalizeSemester(s: string | null | undefined): string {
+  if (!s) return "";
+  return /^([1-9]|1[0-4])$/.test(s) ? s : "";
+}
 
 function CourseForm({
   onClose,
   onSubmit,
   editingCourse,
+  defaultColor,
 }: {
   onClose: () => void;
   onSubmit: (f: CourseFormData) => Promise<void>;
   editingCourse?: Course | null;
+  defaultColor?: string;
 }) {
   const initial: CourseFormData = editingCourse
     ? {
         name: editingCourse.name,
         code: editingCourse.code,
         description: editingCourse.description ?? "",
-        semester: editingCourse.semester ?? "",
+        semester: normalizeSemester(editingCourse.semester),
         color: editingCourse.color,
       }
-    : { name: "", code: "", description: "", semester: "", color: PALETTE[0] };
+    : {
+        name: "",
+        code: "",
+        description: "",
+        semester: "",
+        color: defaultColor ?? PALETTE[0],
+      };
   const [fields, setFields] = useState<CourseFormData>(initial);
   const [errors, setErrors] = useState<
     Partial<Record<keyof CourseFormData, string>>
@@ -45,7 +49,7 @@ function CourseForm({
   function validate() {
     const e: Partial<Record<keyof CourseFormData, string>> = {};
     if (!fields.name.trim()) e.name = "Required";
-    if (!fields.code.trim()) e.code = "Required";
+    // Course code is optional — many students don't have it handy.
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -55,7 +59,8 @@ function CourseForm({
     if (!validate()) return;
     setLoading(true);
     try {
-      await onSubmit(fields);
+      // Empty semester → undefined so it's stored as null, not ""
+      await onSubmit({ ...fields, semester: fields.semester || undefined });
       onClose();
     } finally {
       setLoading(false);
@@ -67,6 +72,10 @@ function CourseForm({
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setFields((p) => ({ ...p, [key]: e.target.value }));
 
+  const isCustomColor = !PALETTE.some(
+    (c) => c.toLowerCase() === fields.color.toLowerCase(),
+  );
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
@@ -77,24 +86,48 @@ function CourseForm({
         error={errors.name}
       />
       <Input
-        label="Course Code"
+        label="Course Code (optional)"
         placeholder="e.g. CS301"
         value={fields.code}
         onChange={set("code")}
         error={errors.code}
       />
-      <Input
-        label="Semester"
-        placeholder="e.g. 2024/2025 Ganjil"
-        value={fields.semester}
-        onChange={set("semester")}
-      />
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          Semester
+        </label>
+        <div className="relative">
+          <select
+            value={fields.semester ?? ""}
+            onChange={(e) =>
+              setFields((p) => ({ ...p, semester: e.target.value }))
+            }
+            className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 pr-9 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+          >
+            <option value="">Not set</option>
+            {SEMESTERS.map((n) => (
+              <option key={n} value={String(n)}>
+                Semester {n}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
+          />
+        </div>
+      </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-          Color
-        </label>
-        <div className="flex gap-2.5 flex-wrap">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            Color
+          </label>
+          <span className="font-mono text-[10px] uppercase text-zinc-400">
+            {fields.color}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
           {PALETTE.map((c) => (
             <button
               key={c}
@@ -104,12 +137,36 @@ function CourseForm({
               style={{
                 backgroundColor: c,
                 boxShadow:
-                  fields.color === c
+                  fields.color.toLowerCase() === c.toLowerCase()
                     ? `0 0 0 3px white, 0 0 0 5px ${c}`
                     : "none",
               }}
             />
           ))}
+          {/* Custom color picker */}
+          <label
+            className="relative flex h-7 w-7 cursor-pointer items-center justify-center overflow-hidden rounded-full transition-transform hover:scale-110"
+            title="Custom color"
+            style={
+              isCustomColor
+                ? {
+                    backgroundColor: fields.color,
+                    boxShadow: `0 0 0 3px white, 0 0 0 5px ${fields.color}`,
+                  }
+                : { border: "2px dashed #d4d4d8" }
+            }
+          >
+            {!isCustomColor && <Pipette size={12} className="text-zinc-400" />}
+            <input
+              type="color"
+              value={fields.color}
+              onChange={(e) =>
+                setFields((p) => ({ ...p, color: e.target.value }))
+              }
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label="Custom color"
+            />
+          </label>
         </div>
       </div>
 
@@ -149,11 +206,13 @@ export default function CourseFormModal({
   onClose,
   onSubmit,
   editingCourse,
+  defaultColor,
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (f: CourseFormData) => Promise<void>;
   editingCourse?: Course | null;
+  defaultColor?: string;
 }) {
   return (
     <Modal
@@ -168,6 +227,7 @@ export default function CourseFormModal({
         onClose={onClose}
         onSubmit={onSubmit}
         editingCourse={editingCourse}
+        defaultColor={defaultColor}
       />
     </Modal>
   );
