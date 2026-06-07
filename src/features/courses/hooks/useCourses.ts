@@ -10,6 +10,14 @@ import {
 } from "../services/courseService";
 import { useToast } from "../../../shared/context/ToastContext";
 
+// Postgres unique-violation → human message. The constraint is on
+// (user_id, code, semester), so a clash means a real duplicate course code.
+function courseErrorMessage(err: unknown, fallback: string): string {
+  if ((err as { code?: string })?.code === "23505")
+    return "A course with that code already exists for this semester";
+  return fallback;
+}
+
 interface UseCoursesReturn {
   courses: Course[];
   loading: boolean;
@@ -89,9 +97,9 @@ export function useCourses(): UseCoursesReturn {
       const created = await createCourse(userRef.current.id, form);
       setCourses((prev) => prev.map((c) => (c.id === tempId ? created : c)));
       toastRef.current("Course added", "success");
-    } catch {
+    } catch (err) {
       setCourses((prev) => prev.filter((c) => c.id !== tempId));
-      toastRef.current("Failed to add course", "error");
+      toastRef.current(courseErrorMessage(err, "Failed to add course"), "error");
     }
   }, []);
 
@@ -113,9 +121,12 @@ export function useCourses(): UseCoursesReturn {
         const updated = await updateCourse(id, form);
         setCourses((all) => all.map((c) => (c.id === id ? updated : c)));
         toastRef.current("Course updated", "success");
-      } catch {
+      } catch (err) {
         load();
-        toastRef.current("Failed to update course", "error");
+        toastRef.current(
+          courseErrorMessage(err, "Failed to update course"),
+          "error",
+        );
       }
     },
     [load],

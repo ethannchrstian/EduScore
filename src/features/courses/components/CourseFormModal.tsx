@@ -28,7 +28,7 @@ function CourseForm({
   const initial: CourseFormData = editingCourse
     ? {
         name: editingCourse.name,
-        code: editingCourse.code,
+        code: editingCourse.code ?? "",
         description: editingCourse.description ?? "",
         semester: normalizeSemester(editingCourse.semester),
         color: editingCourse.color,
@@ -86,7 +86,7 @@ function CourseForm({
         error={errors.name}
       />
       <Input
-        label="Course Code (optional)"
+        label="Course Code"
         placeholder="e.g. CS301"
         value={fields.code}
         onChange={set("code")}

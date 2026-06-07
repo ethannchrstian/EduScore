@@ -8,7 +8,7 @@ export interface Course {
   id: string;
   userId: string;
   name: string;
-  code: string;
+  code: string | null;
   description: string | null;
   semester: string | null;
   color: string;
@@ -33,7 +33,7 @@ interface RawCourse {
   id: string;
   user_id: string;
   name: string;
-  code: string;
+  code: string | null;
   description: string | null;
   semester: string | null;
   color: string;
@@ -45,6 +45,13 @@ interface RawCourse {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// Blank text → null. Empty strings collide under the
+// (user_id, code, semester) unique constraint; NULLs don't.
+function blankToNull(v: string | null | undefined): string | null {
+  const trimmed = v?.trim();
+  return trimmed ? trimmed : null;
+}
 
 function deriveProgress(tasks: { status: string }[]) {
   if (tasks.length === 0)
@@ -100,10 +107,10 @@ export async function createCourse(
     .from("matakuliah")
     .insert({
       user_id: userId,
-      name: form.name,
-      code: form.code,
-      description: form.description ?? null,
-      semester: form.semester ?? null,
+      name: form.name.trim(),
+      code: blankToNull(form.code),
+      description: blankToNull(form.description),
+      semester: blankToNull(form.semester),
       color: form.color,
     })
     .select("*, tugas(status)")
@@ -120,10 +127,10 @@ export async function updateCourse(
   const { data, error } = await supabase
     .from("matakuliah")
     .update({
-      name: form.name,
-      code: form.code,
-      description: form.description ?? null,
-      semester: form.semester ?? null,
+      name: form.name.trim(),
+      code: blankToNull(form.code),
+      description: blankToNull(form.description),
+      semester: blankToNull(form.semester),
       color: form.color,
     })
     .eq("id", id)

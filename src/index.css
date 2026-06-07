@@ -73,3 +73,37 @@
     box-shadow: 0 0 0 10px rgba(139, 92, 246, 0), 0 6px 16px rgba(99, 102, 241, 0.3);
   }
 }
+
+/* Auth screen — slowly drifting aurora blobs */
+@keyframes aurora-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(8%, 10%) scale(1.15); }
+  66%      { transform: translate(-6%, -4%) scale(0.95); }
+}
+@keyframes aurora-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-10%, 6%) scale(1.1); }
+  66%      { transform: translate(6%, -8%) scale(1.2); }
+}
+@keyframes aurora-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(10%, -10%) scale(1.18); }
+}
+
+/* Streak flame — ignite on load, then gently flicker */
+@keyframes flame-ignite {
+  0%   { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+  55%  { transform: scale(1.25) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(-1.5deg); }
+  25%      { transform: scale(1.1) rotate(2deg); }
+  50%      { transform: scale(0.95) rotate(-2deg); }
+  75%      { transform: scale(1.06) rotate(1.5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-aurora] { animation: none !important; }
+  [data-flame] { animation: none !important; }
+}

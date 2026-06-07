@@ -5,6 +5,7 @@ import { RefreshProvider } from "./shared/context/RefreshContext";
 import AppShell from "./shared/components/layout/AppShell";
 import ProtectedRoute from "./shared/components/layout/ProtectedRoute";
 import AuthPage from "./features/auth/pages/AuthPage";
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import DashboardPage from "./features/dashboard/pages/DashboardPage";
 import CoursesPage from "./features/courses/pages/CoursesPage";
 import CourseDetailPage from "./features/course-detail/pages/CourseDetailPage";
@@ -19,6 +20,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<AppShell />}>
                 <Route path="/" element={<DashboardPage />} />

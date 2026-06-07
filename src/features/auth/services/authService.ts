@@ -37,3 +37,29 @@ export async function signOut(): Promise<AuthResult> {
   const { error } = await supabase.auth.signOut();
   return { error };
 }
+
+// Sends a password-reset email. The link returns the user to /reset-password
+// with a recovery session already established.
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  return { error };
+}
+
+// Sets a new password for the currently-authenticated (recovery) session.
+export async function updatePassword(password: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.updateUser({ password });
+  return { error };
+}
+
+// Updates the signed-in user's display name (stored in user metadata).
+// Triggers a USER_UPDATED auth event, so AuthContext refreshes automatically.
+export async function updateDisplayName(
+  fullName: string,
+): Promise<AuthResult> {
+  const { error } = await supabase.auth.updateUser({
+    data: { full_name: fullName },
+  });
+  return { error };
+}

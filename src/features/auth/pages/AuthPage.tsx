@@ -1,60 +1,63 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { GraduationCap } from "lucide-react";
+import AuthShell from "../components/AuthShell";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
+import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { useAuthContext } from "../../../shared/context/AuthContext";
 
-type Tab = "login" | "register";
+type Tab = "login" | "register" | "forgot";
+
+const COPY: Record<Tab, { title: string; subtitle: string }> = {
+  login: {
+    title: "Welcome back",
+    subtitle: "Sign in to pick up where you left off.",
+  },
+  register: {
+    title: "Create your account",
+    subtitle: "Start tracking your courses and deadlines.",
+  },
+  forgot: {
+    title: "Reset your password",
+    subtitle: "Enter your email and we'll send you a reset link.",
+  },
+};
 
 export default function AuthPage() {
   const { user, loading } = useAuthContext();
   const [tab, setTab] = useState<Tab>("login");
+
   if (!loading && user) return <Navigate to="/" replace />;
   if (loading)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <span className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
       </div>
     );
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 px-6 py-12">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 shadow-lg shadow-indigo-200">
-            <GraduationCap size={26} className="text-white" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
-              EduScore
-            </h1>
-            <p className="mt-1 text-sm text-zinc-400">
-              Your academic command center
-            </p>
-          </div>
-        </div>
+    <AuthShell title={COPY[tab].title} subtitle={COPY[tab].subtitle}>
+      {tab === "login" && <LoginForm onForgot={() => setTab("forgot")} />}
+      {tab === "register" && (
+        <RegisterForm onSwitch={() => setTab("login")} />
+      )}
+      {tab === "forgot" && (
+        <ForgotPasswordForm onBack={() => setTab("login")} />
+      )}
 
-        <div className="mb-5 flex rounded-xl bg-zinc-100 p-1">
-          {(["login", "register"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all duration-200 ${tab === t ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}
-            >
-              {t === "login" ? "Sign in" : "Register"}
-            </button>
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm">
-          {tab === "login" ? (
-            <LoginForm onSwitch={() => setTab("register")} />
-          ) : (
-            <RegisterForm onSwitch={() => setTab("login")} />
-          )}
-        </div>
-      </div>
-    </div>
+      {tab !== "forgot" && (
+        <p className="mt-7 text-center text-sm text-slate-400">
+          {tab === "login"
+            ? "Don't have an account? "
+            : "Already have an account? "}
+          <button
+            onClick={() => setTab(tab === "login" ? "register" : "login")}
+            className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
+          >
+            {tab === "login" ? "Create one" : "Sign in"}
+          </button>
+        </p>
+      )}
+    </AuthShell>
   );
 }
